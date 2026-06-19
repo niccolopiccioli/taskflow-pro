@@ -30,10 +30,12 @@ curl -sS -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/au
   -H "Content-Type: application/json" \
   -d "{
     \"external_email_enabled\": true,
-    \"mailer_autoconfirm\": false,
+    \"mailer_autoconfirm\": true,
+    \"site_url\": \"https://taskflow-pro-murex.vercel.app\",
+    \"uri_allow_list\": \"https://taskflow-pro-murex.vercel.app/auth/callback,http://localhost:3000/auth/callback\",
     \"smtp_admin_email\": \"onboarding@resend.dev\",
     \"smtp_host\": \"smtp.resend.com\",
-    \"smtp_port\": 465,
+    \"smtp_port\": \"465\",
     \"smtp_user\": \"resend\",
     \"smtp_pass\": \"${RESEND_API_KEY}\",
     \"smtp_sender_name\": \"TaskFlow Pro\"
