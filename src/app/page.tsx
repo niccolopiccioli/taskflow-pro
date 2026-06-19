@@ -68,14 +68,14 @@ export default function LandingPage() {
 
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/8 via-transparent to-amber-500/5 pointer-events-none" />
 
-      <section className="pt-32 pb-20 px-4 relative">
+      <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 relative">
         <div className="container mx-auto max-w-5xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-sm mb-6 border border-teal-500/20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-xs sm:text-sm mb-4 sm:mb-6 border border-teal-500/20">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400" />
@@ -83,11 +83,11 @@ export default function LandingPage() {
               v3.0 — Powered by Supabase
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-balance mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-balance mb-4 sm:mb-6 px-2">
               Gestisci il tuo team alla velocità del pensiero
             </h1>
 
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8 px-2">
               TaskFlow Pro è il Kanban board che i team di sviluppo scelgono per accelerare le consegne, senza perdere il controllo.
             </p>
 
@@ -114,7 +114,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-16 relative"
+            className="mt-10 sm:mt-16 relative px-2 sm:px-0"
           >
             <div className="rounded-xl border border-border/60 bg-card/50 shadow-2xl shadow-teal-500/5 overflow-hidden glow-teal backdrop-blur">
               <div className="h-8 bg-zinc-900 border-b border-border/60 flex items-center gap-2 px-4">
@@ -122,10 +122,10 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-amber-500/80" />
                 <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
               </div>
-              <div className="p-6">
-                <div className="flex gap-4">
+              <div className="p-4 sm:p-6 overflow-x-auto">
+                <div className="flex gap-3 sm:gap-4 min-w-[280px]">
                   {['Da Fare', 'In Progress', 'Fatto'].map((col, i) => (
-                    <div key={col} className="flex-1 space-y-3">
+                    <div key={col} className="flex-1 min-w-[80px] space-y-2 sm:space-y-3">
                       <div className="text-sm font-medium text-muted-foreground mb-2">{col}</div>
                       <div className={`rounded-lg p-3 space-y-2 border ${
                         i === 1 ? 'bg-teal-500/10 border-teal-500/20' :
@@ -144,7 +144,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="features" className="py-20 px-4 border-t border-border/40 relative">
+      <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border/40 relative">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
@@ -155,7 +155,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -177,7 +177,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="testimonials" className="py-20 px-4 relative">
+      <section id="testimonials" className="py-16 sm:py-20 px-4 sm:px-6 relative">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
@@ -188,7 +188,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {testimonials.map((testimonial, index) => (
               <motion.div
                 key={testimonial.name}

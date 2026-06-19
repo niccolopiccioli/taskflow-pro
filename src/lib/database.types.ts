@@ -168,6 +168,47 @@ export interface Database {
         };
         Returns: undefined;
       };
+      invite_member_by_email: {
+        Args: {
+          p_workspace_id: string;
+          p_email: string;
+        };
+        Returns: undefined;
+      };
+      remove_workspace_member: {
+        Args: {
+          p_workspace_id: string;
+          p_user_id: string;
+        };
+        Returns: undefined;
+      };
+      update_workspace_member_role: {
+        Args: {
+          p_workspace_id: string;
+          p_user_id: string;
+          p_role: MemberRole;
+        };
+        Returns: undefined;
+      };
+      leave_workspace: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      delete_workspace: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      is_workspace_admin: {
+        Args: {
+          ws_id: string;
+          u_id?: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

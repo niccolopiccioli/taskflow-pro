@@ -70,9 +70,32 @@ const config: Config = {
 			xl: 'calc(var(--radius) + 4px)'
 		},
 		fontFamily: {
-			sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
-			display: ['var(--font-display)', 'Georgia', 'serif'],
-			mono: ['var(--font-mono)', 'monospace']
+			sans: [
+				'var(--font-sans)',
+				'-apple-system',
+				'BlinkMacSystemFont',
+				'"SF Pro Text"',
+				'"SF Pro Display"',
+				'system-ui',
+				'sans-serif',
+			],
+			display: [
+				'var(--font-sans)',
+				'-apple-system',
+				'BlinkMacSystemFont',
+				'"SF Pro Display"',
+				'system-ui',
+				'sans-serif',
+			],
+			mono: [
+				'ui-monospace',
+				'SFMono-Regular',
+				'"SF Mono"',
+				'Menlo',
+				'Monaco',
+				'Consolas',
+				'monospace',
+			],
 		},
 		keyframes: {
 			"accordion-down": {

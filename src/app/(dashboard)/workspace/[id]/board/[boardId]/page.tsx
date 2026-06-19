@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '@/components/ui/label';
 import { Plus, GripVertical, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Brand } from '@/components/layout/brand';
 import { createClient } from '@/lib/supabase/client';
 import { getBoardWithColumns, createTask, moveTask } from '@/lib/data';
 import type { BoardWithColumns, TaskPriority } from '@/lib/database.types';
@@ -106,25 +107,28 @@ export default function KanbanBoardPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl flex-shrink-0 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-teal-400 transition-colors">
-              Dashboard
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="font-medium font-display">{board.name}</span>
+      <header className="border-b border-white/[0.06] bg-zinc-950/80 backdrop-blur-2xl flex-shrink-0 sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <Brand href="/dashboard" size="sm" className="hidden sm:flex shrink-0" />
+              <Link href="/dashboard" className="text-xs sm:text-sm text-muted-foreground hover:text-teal-400 transition-colors shrink-0">
+                Dashboard
+              </Link>
+              <span className="text-muted-foreground shrink-0">/</span>
+              <span className="font-medium font-display text-sm sm:text-base truncate">{board.name}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-auto">
-        <div className="h-full p-6">
-          <div className="flex gap-6 h-full min-w-max">
+      <main className="flex-1 overflow-x-auto overscroll-x-contain">
+        <div className="h-full p-4 sm:p-6">
+          <div className="flex gap-4 sm:gap-6 h-full min-w-max pb-4">
             {board.columns.map((column) => (
               <div
                 key={column.id}
-                className="w-80 flex flex-col"
+                className="w-[min(85vw,20rem)] sm:w-72 md:w-80 flex flex-col flex-shrink-0"
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
               >
@@ -196,7 +200,7 @@ export default function KanbanBoardPage() {
       </main>
 
       <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
           <DialogHeader>
             <DialogTitle>Nuovo task</DialogTitle>
           </DialogHeader>

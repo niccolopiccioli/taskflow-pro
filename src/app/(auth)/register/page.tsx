@@ -13,6 +13,7 @@ import { registerSchema, RegisterInput } from '@/lib/validations';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { Brand } from '@/components/layout/brand';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -83,11 +84,9 @@ export default function RegisterPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-amber-500/5 pointer-events-none" />
       <Card className="w-full max-w-md relative border-border/60 bg-card/80 backdrop-blur-xl">
         <CardHeader className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-9 h-9 bg-teal-500 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/20">
-              <span className="text-zinc-950 text-sm font-bold">TF</span>
-            </div>
-          </Link>
+          <div className="flex justify-center mb-6">
+            <Brand href="/" size="lg" />
+          </div>
           <CardTitle className="text-2xl font-display">Crea il tuo account</CardTitle>
           <CardDescription>Inizia a gestire i tuoi progetti</CardDescription>
         </CardHeader>

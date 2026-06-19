@@ -24,8 +24,8 @@ Progetto attivo: `lcubcugivegahjsbmepy` (eu-west-1)
 1. Dashboard: https://supabase.com/dashboard/project/lcubcugivegahjsbmepy
 2. Schema già applicato via migrazione `initial_schema`
 3. **Auth → URL Configuration** — aggiungi:
-   - Site URL: `https://taskflow-pro-murex.vercel.app`
-   - Redirect URLs: `https://taskflow-pro-murex.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`
+   - Site URL: `https://taskflow-pro-niccolopicciolis-projects.vercel.app`
+   - Redirect URLs: `https://taskflow-pro-niccolopicciolis-projects.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`
 4. Disabilita "Confirm email" in sviluppo se vuoi login immediato
 
 ### 3. Stripe (test mode)
@@ -57,12 +57,12 @@ Apri [http://localhost:3000](http://localhost:3000).
 
 ## Deploy Vercel
 
-**Live:** https://taskflow-pro-murex.vercel.app
+**Live:** https://taskflow-pro-niccolopicciolis-projects.vercel.app
 
 Progetto Vercel: `taskflow-pro` (team niccolopicciolis-projects)
 
 1. Env vars già configurate su Vercel
-2. Webhook Stripe punta a `https://taskflow-pro-murex.vercel.app/api/stripe/webhook`
+2. Webhook Stripe punta a `https://taskflow-pro-niccolopicciolis-projects.vercel.app/api/stripe/webhook`
 3. Per redeploy: `vercel deploy --prod`
 
 ## Test pagamenti

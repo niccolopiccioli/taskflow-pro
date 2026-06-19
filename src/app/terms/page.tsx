@@ -1,44 +1,16 @@
 'use client';
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { SiteHeader } from '@/components/layout/site-header';
+import { SiteFooter } from '@/components/layout/site-footer';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-bold">TF</span>
-              </div>
-              <span className="font-bold text-lg">TaskFlow Pro</span>
-            </Link>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/#features" className="text-sm hover:text-primary">Funzionalità</Link>
-              <Link href="/pricing" className="text-sm hover:text-primary">Prezzi</Link>
-              <Link href="/docs" className="text-sm hover:text-primary">API</Link>
-              <Link href="/about" className="text-sm hover:text-primary">About</Link>
-              <Link href="/blog" className="text-sm hover:text-primary">Blog</Link>
-            </nav>
-            <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Accedi</Button>
-              </Link>
-              <Link href="/register">
-                <Button size="sm">Inizia gratis</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background noise-bg">
+      <SiteHeader />
 
-      {/* Content */}
-      <section className="py-16 px-4">
+      <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="container mx-auto max-w-3xl">
-          <h1 className="text-3xl md:text-4xl font-bold mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-6 sm:mb-8">
             Termini di Servizio
           </h1>
           
@@ -151,38 +123,7 @@ export default function TermsPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-950 border-t border-slate-800">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="text-primary-foreground font-bold text-sm">TF</span>
-              </div>
-              <span className="font-bold text-white text-lg">TaskFlow Pro</span>
-            </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm">
-              <Link href="#features" className="text-slate-400 hover:text-white transition-colors duration-200">Funzionalità</Link>
-              <Link href="/pricing" className="text-slate-400 hover:text-white transition-colors duration-200">Prezzi</Link>
-              <Link href="/docs" className="text-slate-400 hover:text-white transition-colors duration-200">API</Link>
-              <Link href="/about" className="text-slate-400 hover:text-white transition-colors duration-200">About</Link>
-              <Link href="/blog" className="text-slate-400 hover:text-white transition-colors duration-200">Blog</Link>
-            </div>
-
-            <div className="flex items-center gap-6 text-sm">
-              <Link href="/privacy" className="text-slate-400 hover:text-white transition-colors duration-200">Privacy</Link>
-              <Link href="/terms" className="text-slate-400 hover:text-white transition-colors duration-200">Terms</Link>
-            </div>
-          </div>
-          
-          <div className="mt-10 pt-8 border-t border-slate-800 text-center">
-            <p className="text-sm text-slate-500">
-              © 2026 TaskFlow Pro. Tutti i diritti riservati.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

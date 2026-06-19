@@ -12,11 +12,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { forgotPasswordSchema, ForgotPasswordInput } from '@/lib/validations';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { Brand } from '@/components/layout/brand';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -25,31 +28,42 @@ export default function ForgotPasswordPage() {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onSubmit = async (_data: ForgotPasswordInput) => {
+  const onSubmit = async (data: ForgotPasswordInput) => {
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Email inviata",
-      description: "Controlla la tua inbox per resettare la password.",
-    });
-    router.push('/login');
-    
-    setIsLoading(false);
+
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, { redirectTo });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email inviata',
+        description: 'Se l\'email è registrata, riceverai un link per reimpostare la password. Controlla anche lo spam.',
+      });
+      router.push('/login');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossibile inviare l\'email di reset.';
+      toast({
+        variant: 'destructive',
+        title: 'Errore',
+        description: message.includes('rate limit')
+          ? 'Limite email raggiunto. Riprova tra qualche minuto.'
+          : message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 noise-bg">
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+      <Card className="w-full max-w-md relative border-border/60 bg-card/80 backdrop-blur-xl">
         <CardHeader className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground text-sm">TF</span>
-            </div>
-          </Link>
+          <div className="flex justify-center mb-6">
+            <Brand href="/" size="lg" />
+          </div>
           <CardTitle className="text-2xl">Password dimenticata?</CardTitle>
           <CardDescription>Inserisci la tua email per ricevere il link di reset</CardDescription>
         </CardHeader>
@@ -63,10 +77,10 @@ export default function ForgotPasswordPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="nome@azienda.it" 
-                        {...field} 
+                      <Input
+                        type="email"
+                        placeholder="nome@azienda.it"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -75,7 +89,7 @@ export default function ForgotPasswordPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-teal-500 hover:bg-teal-400 text-zinc-950" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,16 +1,14 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Layout, CheckCircle, Clock, AlertCircle, LogOut, Loader2, Mail, CreditCard, Sparkles } from 'lucide-react';
+import { Plus, Layout, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -23,7 +21,10 @@ import {
   getWorkspaceStats,
 } from '@/lib/data';
 import type { Profile, WorkspaceWithMembers } from '@/lib/database.types';
-import { canCreateWorkspace, canAddMember, planLabel } from '@/lib/plans';
+import { canCreateWorkspace, canAddMember } from '@/lib/plans';
+import { canInviteMembers } from '@/lib/workspace-permissions';
+import { DashboardHeader } from '@/components/layout/dashboard-header';
+import { WorkspaceTeamPanel } from '@/components/workspace/workspace-team-panel';
 
 interface Board {
   id: string;
@@ -166,6 +167,15 @@ function DashboardContent() {
   const handleInviteMember = async () => {
     if (!inviteEmail.trim() || !selectedWorkspace || !profile) return;
 
+    if (!canInviteMembers(selectedWorkspace, profile.id)) {
+      toast({
+        variant: 'destructive',
+        title: 'Permesso negato',
+        description: 'Solo gli admin possono invitare membri.',
+      });
+      return;
+    }
+
     if (!canAddMember(profile.plan, selectedWorkspace.members.length)) {
       toast({
         variant: 'destructive',
@@ -177,11 +187,14 @@ function DashboardContent() {
 
     setIsSubmitting(true);
     try {
-      await inviteMemberByEmail(supabase, selectedWorkspace.id, inviteEmail);
+      const result = await inviteMemberByEmail(supabase, selectedWorkspace.id, inviteEmail);
       setInviteMemberOpen(false);
       setInviteEmail('');
       await loadData();
-      toast({ title: 'Membro aggiunto' });
+      toast({
+        title: result.memberAdded ? 'Membro aggiunto' : 'Invito inviato',
+        description: result.message,
+      });
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -216,6 +229,14 @@ function DashboardContent() {
     }
   };
 
+  const handleWorkspaceLeftOrDeleted = async () => {
+    setSelectedWorkspace(null);
+    await loadData();
+  };
+
+  const userCanInvite =
+    !!profile && !!selectedWorkspace && canInviteMembers(selectedWorkspace, profile.id);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -226,60 +247,31 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/20">
-              <span className="text-zinc-950 text-sm font-bold">TF</span>
-            </div>
-            TaskFlow Pro
-          </Link>
+      <DashboardHeader
+        profile={profile}
+        workspaceName={selectedWorkspace?.name}
+        canInvite={userCanInvite}
+        onInvite={() => setInviteMemberOpen(true)}
+        onLogout={handleLogout}
+        onManageBilling={handleManageBilling}
+        onProfileUpdated={setProfile}
+      />
 
-          <div className="flex items-center gap-3">
-            {profile && (
-              <Badge variant="outline" className="border-teal-500/30 text-teal-400 gap-1">
-                <Sparkles className="w-3 h-3" />
-                {planLabel(profile.plan)}
-              </Badge>
-            )}
-            {profile?.stripe_customer_id && (
-              <Button variant="ghost" size="sm" onClick={handleManageBilling}>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Fatturazione
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => setInviteMemberOpen(true)}>
-              <Mail className="w-4 h-4 mr-2" />
-              Invita
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Esci
-            </Button>
-            <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center ring-1 ring-teal-500/30">
-              <span className="text-teal-400 text-sm font-medium">
-                {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <h1 className="text-3xl font-display font-bold mb-2">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">
             Ciao, {profile?.full_name || 'Utente'}
           </h1>
-          <p className="text-muted-foreground">Benvenuto nella tua dashboard.</p>
+          <p className="text-muted-foreground text-sm sm:text-base">Benvenuto nella tua dashboard.</p>
         </motion.div>
 
-        <div className="mb-8">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm font-medium text-muted-foreground">Workspace:</span>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <span className="text-sm font-medium text-muted-foreground w-full sm:w-auto">Workspace:</span>
             {workspaces.map((ws) => (
               <Button
                 key={ws.id}
@@ -298,7 +290,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[
             { label: 'Task totali', value: stats.total, icon: Layout, color: 'text-teal-400' },
             { label: 'In progresso', value: stats.inProgress, icon: Clock, color: 'text-amber-400' },
@@ -306,19 +298,19 @@ function DashboardContent() {
             { label: 'Board', value: stats.boardCount, icon: AlertCircle, color: 'text-zinc-400' },
           ].map((stat) => (
             <Card key={stat.label} className="border-border/60 bg-card/50">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">{stat.label}</span>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  <span className="text-xs sm:text-sm text-muted-foreground">{stat.label}</span>
+                  <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
                 </div>
-                <p className="text-3xl font-bold">{stat.value}</p>
+                <p className="text-2xl sm:text-3xl font-bold">{stat.value}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         <Card className="mb-8 border-border/60 bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
             <CardTitle>Le tue Board</CardTitle>
             <Button
               size="sm"
@@ -346,7 +338,7 @@ function DashboardContent() {
                 </Button>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {boards.map((board) => (
                   <div
                     key={board.id}
@@ -373,41 +365,21 @@ function DashboardContent() {
           </CardContent>
         </Card>
 
-        {selectedWorkspace && (
-          <Card className="border-border/60 bg-card/50">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Membri del Workspace</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => setInviteMemberOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Invita
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {selectedWorkspace.members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border border-border/60">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">
-                        <span className="text-teal-400 text-sm">
-                          {member.profile.full_name?.charAt(0) || member.profile.email.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{member.profile.full_name || 'Utente'}</p>
-                        <p className="text-xs text-muted-foreground">{member.profile.email}</p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{member.role}</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {selectedWorkspace && profile && (
+          <div id="team">
+            <WorkspaceTeamPanel
+              workspace={selectedWorkspace}
+              currentUserId={profile.id}
+              onInvite={() => setInviteMemberOpen(true)}
+              onRefresh={loadData}
+              onWorkspaceDeleted={handleWorkspaceLeftOrDeleted}
+            />
+          </div>
         )}
       </main>
 
       <Dialog open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
           <DialogHeader>
             <DialogTitle>Crea Workspace</DialogTitle>
             <DialogDescription>Un workspace ti permette di organizzare progetti e team.</DialogDescription>
@@ -433,7 +405,7 @@ function DashboardContent() {
       </Dialog>
 
       <Dialog open={createBoardOpen} onOpenChange={setCreateBoardOpen}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
           <DialogHeader>
             <DialogTitle>Crea Board</DialogTitle>
             <DialogDescription>Una board Kanban per gestire i tuoi task.</DialogDescription>
@@ -459,11 +431,11 @@ function DashboardContent() {
       </Dialog>
 
       <Dialog open={inviteMemberOpen} onOpenChange={setInviteMemberOpen}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
           <DialogHeader>
             <DialogTitle>Invita Membro</DialogTitle>
             <DialogDescription>
-              Invita un nuovo membro al workspace {selectedWorkspace?.name}.
+              Invieremo un&apos;email di invito a questo indirizzo. Se l&apos;utente è già registrato verrà aggiunto al workspace {selectedWorkspace?.name}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

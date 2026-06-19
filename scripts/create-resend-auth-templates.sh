@@ -6,7 +6,7 @@ if [[ -f "$ROOT_DIR/.env.local" ]]; then set -a; source "$ROOT_DIR/.env.local"; 
 : "${RESEND_API_KEY:?RESEND_API_KEY required}"
 
 FROM="TaskFlow Pro <onboarding@resend.dev>"
-APP_URL="${NEXT_PUBLIC_APP_URL:-https://taskflow-pro-murex.vercel.app}"
+APP_URL="${NEXT_PUBLIC_APP_URL:-https://taskflow-pro-niccolopicciolis-projects.vercel.app}"
 AUTH="Authorization: Bearer ${RESEND_API_KEY}"
 
 wrap_html() {

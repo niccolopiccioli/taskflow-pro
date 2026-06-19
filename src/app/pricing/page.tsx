@@ -111,8 +111,8 @@ export default function PricingPage() {
 
       <div className="absolute inset-0 bg-gradient-to-b from-teal-500/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="relative bg-amber-500/10 border-b border-amber-500/20 mt-16">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-center gap-2 text-sm text-amber-200/90">
+      <div className="relative bg-amber-500/10 border-b border-amber-500/20 pt-14 sm:pt-16">
+        <div className="container mx-auto px-4 sm:px-6 py-3 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-200/90 text-center">
           <CreditCard className="w-4 h-4" />
           <span>
             Modalità test Stripe — usa la carta <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-xs">4242 4242 4242 4242</code>
@@ -120,9 +120,9 @@ export default function PricingPage() {
         </div>
       </div>
 
-      <section className="py-20 px-4 relative">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 relative">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 sm:mb-6">
             Scegli il piano giusto per il tuo team
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
@@ -131,13 +131,13 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="py-12 px-4 pb-20 relative">
+      <section className="py-8 sm:py-12 px-4 sm:px-6 pb-16 sm:pb-20 relative">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl p-8 border ${
+                className={`relative rounded-2xl p-6 sm:p-8 border ${
                   plan.popular
                     ? 'border-teal-500/50 bg-card/80 glow-teal backdrop-blur'
                     : 'border-border/60 bg-card/50'

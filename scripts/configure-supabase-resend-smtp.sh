@@ -31,8 +31,8 @@ curl -sS -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/au
   -d "{
     \"external_email_enabled\": true,
     \"mailer_autoconfirm\": true,
-    \"site_url\": \"https://taskflow-pro-murex.vercel.app\",
-    \"uri_allow_list\": \"https://taskflow-pro-murex.vercel.app/auth/callback,http://localhost:3000/auth/callback\",
+    \"site_url\": \"https://taskflow-pro-niccolopicciolis-projects.vercel.app\",
+    \"uri_allow_list\": \"https://taskflow-pro-niccolopicciolis-projects.vercel.app/**,http://localhost:3000/**\",
     \"smtp_admin_email\": \"onboarding@resend.dev\",
     \"smtp_host\": \"smtp.resend.com\",
     \"smtp_port\": \"465\",
@@ -42,5 +42,5 @@ curl -sS -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/au
   }" | python3 -m json.tool
 
 echo ""
-echo "Done. Test registration at https://taskflow-pro-murex.vercel.app/register"
+echo "Done. Test registration at https://taskflow-pro-niccolopicciolis-projects.vercel.app/register"
 echo "Note: onboarding@resend.dev only delivers to your Resend account email until you verify a domain."

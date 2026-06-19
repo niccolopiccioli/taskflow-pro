@@ -27,6 +27,26 @@ export async function getProfile(supabase: Client): Promise<Profile | null> {
   return data;
 }
 
+export async function updateProfile(
+  supabase: Client,
+  updates: { full_name?: string }
+): Promise<Profile> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autenticato');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function getWorkspaces(
   supabase: Client
 ): Promise<WorkspaceWithMembers[]> {
@@ -99,30 +119,79 @@ export async function createWorkspace(
 }
 
 export async function inviteMemberByEmail(
-  supabase: Client,
+  _supabase: Client,
   workspaceId: string,
   email: string
 ) {
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email.toLowerCase())
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Utente non trovato. Deve registrarsi prima.');
-  }
-
-  const { error } = await supabase.from('workspace_members').insert({
-    workspace_id: workspaceId,
-    user_id: profile.id,
-    role: 'member',
+  const response = await fetch(`/api/workspaces/${workspaceId}/invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
   });
 
-  if (error) {
-    if (error.code === '23505') throw new Error('Utente già membro del workspace.');
-    throw new Error(error.message);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Impossibile inviare l\'invito');
   }
+
+  return data as { memberAdded: boolean; emailSent: boolean; message: string };
+}
+
+export async function removeWorkspaceMember(workspaceId: string, userId: string) {
+  const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
+    method: 'DELETE',
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Impossibile rimuovere il membro');
+  return data;
+}
+
+export async function updateMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: 'admin' | 'member'
+) {
+  const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Impossibile aggiornare il ruolo');
+  return data;
+}
+
+export async function leaveWorkspace(workspaceId: string) {
+  const response = await fetch(`/api/workspaces/${workspaceId}/leave`, {
+    method: 'POST',
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Impossibile uscire dal workspace');
+  return data;
+}
+
+export async function updateWorkspaceApi(
+  workspaceId: string,
+  name: string,
+  description?: string
+) {
+  const response = await fetch(`/api/workspaces/${workspaceId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Impossibile aggiornare il workspace');
+  return data.workspace;
+}
+
+export async function deleteWorkspaceApi(workspaceId: string) {
+  const response = await fetch(`/api/workspaces/${workspaceId}`, {
+    method: 'DELETE',
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Impossibile eliminare il workspace');
+  return data;
 }
 
 export async function getBoards(supabase: Client, workspaceId: string) {

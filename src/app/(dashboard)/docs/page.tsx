@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
+import { Brand } from '@/components/layout/brand';
 
 const endpoints = [
   {
@@ -55,22 +56,25 @@ export default function DocsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-              <span className="text-zinc-950 text-sm font-bold">TF</span>
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-zinc-950/80 backdrop-blur-2xl">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-[3.75rem] items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Brand href="/dashboard" size="sm" className="sm:hidden shrink-0" />
+              <Brand href="/dashboard" size="md" className="hidden sm:flex shrink-0" />
+              <span className="text-sm font-medium text-muted-foreground truncate hidden min-[400px]:inline">
+                — Docs
+              </span>
             </div>
-            TaskFlow Pro — Docs
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">Dashboard</Button>
-          </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">Dashboard</Button>
+            </Link>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-3xl font-display font-bold mb-2">Documentazione API</h1>
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-4xl">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Documentazione API</h1>
         <p className="text-muted-foreground mb-8">
           TaskFlow Pro usa Supabase per auth e dati, Stripe per i pagamenti (test mode).
         </p>
