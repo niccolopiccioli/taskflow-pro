@@ -25,33 +25,6 @@ export async function GET() {
 
   const projectRef = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? null;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7830/ingest/287043ce-c603-431d-889d-2f262003b458', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': '7e0774',
-    },
-    body: JSON.stringify({
-      sessionId: '7e0774',
-      runId: 'health-check',
-      hypothesisId: 'H1-H3',
-      location: 'api/health/supabase/route.ts:entry',
-      message: 'Supabase health check env resolution',
-      data: {
-        hasUrl: Boolean(url),
-        hasAnonKey: Boolean(anonKey),
-        urlSource,
-        keySource,
-        projectRef,
-        expectedProjectRef: 'lcubcugivegahjsbmepy',
-        projectRefMatch: projectRef === 'lcubcugivegahjsbmepy',
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (!url || !anonKey) {
     return NextResponse.json(
       { ok: false, error: 'missing_env', urlSource, keySource },
@@ -60,40 +33,13 @@ export async function GET() {
   }
 
   const supabase = createClient(url, anonKey);
-  const { data, error } = await supabase.from('profiles').select('id').limit(1);
-
-  // #region agent log
-  fetch('http://127.0.0.1:7830/ingest/287043ce-c603-431d-889d-2f262003b458', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': '7e0774',
-    },
-    body: JSON.stringify({
-      sessionId: '7e0774',
-      runId: 'health-check',
-      hypothesisId: 'H4',
-      location: 'api/health/supabase/route.ts:query',
-      message: 'Supabase profiles query result',
-      data: {
-        ok: !error,
-        errorCode: error?.code ?? null,
-        errorMessage: error?.message ?? null,
-        rowCount: data?.length ?? 0,
-        projectRef,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
+  const { error } = await supabase.from('profiles').select('id').limit(1);
 
   return NextResponse.json({
     ok: !error,
     urlSource,
     keySource,
     projectRef,
-    expectedProjectRef: 'lcubcugivegahjsbmepy',
-    projectRefMatch: projectRef === 'lcubcugivegahjsbmepy',
     dbError: error?.message ?? null,
   });
 }
