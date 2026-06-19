@@ -2,26 +2,14 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
+import {
+  syncProfilePlan,
+  resolvePlanFromMetadata,
+} from '@/lib/stripe/sync-plan';
 import type { PlanTier } from '@/lib/database.types';
 
-const INTERNAL_SECRET = process.env.WEBHOOK_INTERNAL_SECRET || 'taskflow_webhook_2026';
-
-async function syncPlan(
-  userId: string,
-  plan: PlanTier,
-  stripeCustomerId?: string | null,
-  stripeSubscriptionId?: string | null
-) {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc('sync_profile_plan', {
-    p_user_id: userId,
-    p_plan: plan,
-    p_stripe_customer_id: stripeCustomerId ?? null,
-    p_stripe_subscription_id: stripeSubscriptionId ?? null,
-    p_webhook_secret: INTERNAL_SECRET,
-  });
-  if (error) console.error('sync_profile_plan error:', error);
+function getSubscriptionPriceId(subscription: Stripe.Subscription): string | null {
+  return subscription.items.data[0]?.price?.id ?? null;
 }
 
 export async function POST(request: Request) {
@@ -32,57 +20,88 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('STRIPE_WEBHOOK_SECRET is not configured');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+  }
+
   let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
     console.error('Webhook signature error:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.user_id;
-      const plan = session.metadata?.plan as PlanTier | undefined;
-
-      if (userId && plan) {
-        await syncPlan(
-          userId,
-          plan,
-          typeof session.customer === 'string' ? session.customer : session.customer?.id,
-          typeof session.subscription === 'string'
-            ? session.subscription
-            : session.subscription?.id
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.user_id;
+        const plan = resolvePlanFromMetadata(
+          session.metadata?.plan,
+          session.metadata?.price_id
         );
+
+        if (userId && plan) {
+          await syncProfilePlan({
+            userId,
+            plan,
+            stripeCustomerId:
+              typeof session.customer === 'string'
+                ? session.customer
+                : session.customer?.id,
+            stripeSubscriptionId:
+              typeof session.subscription === 'string'
+                ? session.subscription
+                : session.subscription?.id ?? null,
+          });
+          console.info(`Plan synced via webhook: user=${userId} plan=${plan}`);
+        } else {
+          console.warn('checkout.session.completed missing userId or plan', {
+            userId,
+            metadata: session.metadata,
+          });
+        }
+        break;
       }
-      break;
-    }
 
-    case 'customer.subscription.updated':
-    case 'customer.subscription.deleted': {
-      const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.user_id;
-      const plan = subscription.metadata?.plan as PlanTier | undefined;
-
-      if (userId) {
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId = subscription.metadata?.user_id;
+        const priceId = getSubscriptionPriceId(subscription);
         const isActive =
           subscription.status === 'active' || subscription.status === 'trialing';
 
-        await syncPlan(
-          userId,
-          isActive && plan ? plan : 'free',
-          null,
-          isActive ? subscription.id : null
-        );
+        const plan: PlanTier =
+          isActive
+            ? resolvePlanFromMetadata(subscription.metadata?.plan, priceId) || 'free'
+            : 'free';
+
+        if (userId) {
+          await syncProfilePlan({
+            userId,
+            plan,
+            stripeSubscriptionId: isActive ? subscription.id : null,
+            stripePriceId: isActive ? priceId : null,
+          });
+          console.info(`Subscription synced: user=${userId} plan=${plan} status=${subscription.status}`);
+        }
+        break;
       }
-      break;
+
+      default:
+        break;
     }
+  } catch (err) {
+    console.error(`Webhook handler error for ${event.type}:`, err);
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

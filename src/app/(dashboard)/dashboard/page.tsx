@@ -113,6 +113,7 @@ function DashboardContent() {
         title: 'Abbonamento attivato!',
         description: 'Il tuo piano è stato aggiornato con successo.',
       });
+      loadData();
       router.replace('/dashboard');
     }
   }, [searchParams, toast, router]);
