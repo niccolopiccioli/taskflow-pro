@@ -64,6 +64,8 @@ export default function RegisterPage() {
           ? 'Questa email è già registrata. Prova ad accedere.'
           : message.includes('email_address_invalid')
           ? 'Indirizzo email non valido.'
+          : message.includes('rate limit') || message.includes('over_email_send_rate_limit')
+          ? 'Limite email Supabase raggiunto. Disattiva la conferma email nel dashboard Supabase (Auth → Providers → Email) oppure riprova tra circa un\'ora.'
           : message;
 
       toast({
