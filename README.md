@@ -1,253 +1,358 @@
 # TaskWave
 
-**TaskWave** è una web app di **project management Kanban** pensata per **team di sviluppo, startup e PM tecnici** che vogliono coordinare il lavoro senza la complessità dei tool enterprise tradizionali.
+**TaskWave** è una **web application di project management** basata su **board Kanban**, progettata per **team di sviluppo software, startup e project manager tecnici** che vogliono coordinare il lavoro quotidiano senza la complessità e il peso dei tool enterprise tradizionali (Jira, Azure DevOps, ecc.).
 
-In una frase: *gestisci workspace, board e task con drag-and-drop, aggiornamenti in tempo reale e notifiche mirate — partendo gratis e scalando solo quando serve.*
+> **In sintesi:** crei workspace per i tuoi progetti, organizzi il lavoro in board con colonne (Backlog → In progress → Done), assegni task ai membri del team e tutti vedono gli aggiornamenti **in tempo reale** — dal browser o come PWA installabile. Parti **gratis**; paghi solo se ti servono inviti email, allegati, API o integrazioni avanzate.
 
-**Live:** [taskwave-rust.vercel.app](https://taskwave-rust.vercel.app)
-
----
-
-## A cosa serve
-
-TaskWave risolve un problema concreto: **far sapere a tutto il team cosa fare, in che stato si trova e chi se ne occupa**, senza stand-up lunghi, fogli Excel o chat infinite.
-
-È utile quando:
-
-- Un team dev lavora su più progetti in parallelo e ha bisogno di **board separate per ogni iniziativa**
-- Serve **visibilità immediata** su backlog, work in progress e done (metodologia Kanban/Scrum leggera)
-- Più persone modificano la stessa board e devono vedere i cambiamenti **senza refresh** (sync realtime)
-- Il PM o il tech lead vuole **assegnare task**, commentare, impostare scadenze e ricevere **notifiche** su assegnazioni e spostamenti
-- Un team in crescita vuole **invitare membri via email**, gestire ruoli (admin/member) e, in futuro, **integrare CI/CD o Slack** via webhook/API (piano Business)
-
-TaskWave **non** è un sostituto di Jira per workflow enterprise complessi con centinaia di campi custom obbligatori. È un tool **veloce, opinionato e keyboard-friendly** per team che preferiscono shipping a configurazione infinita.
+**Demo live:** [taskwave-rust.vercel.app](https://taskwave-rust.vercel.app)
 
 ---
 
-## Cosa puoi fare (funzionalità principali)
+## Indice
 
-### Workspace e organizzazione
+- [A cosa serve TaskWave](#a-cosa-serve-taskwave)
+- [Per chi è pensato](#per-chi-è-pensato)
+- [Problemi che risolve](#problemi-che-risolve)
+- [Casi d'uso concreti](#casi-duso-concreti)
+- [Come funziona (modello concettuale)](#come-funziona-modello-concettuale)
+- [Flusso utente tipico](#flusso-utente-tipico)
+- [Funzionalità complete](#funzionalità-complete)
+- [Piani e prezzi](#piani-e-prezzi)
+- [Privacy e sicurezza](#privacy-e-sicurezza)
+- [Architettura tecnica](#architettura-tecnica)
+- [Setup locale](#setup-locale)
+- [Deploy](#deploy)
+- [Test e documentazione](#test-e-documentazione)
 
-- **Workspace multipli** — separa clienti, prodotti o squadre; ogni workspace ha membri, board e impostazioni proprie
-- **Ruoli** — `admin` (gestione team, inviti, impostazioni) e `member` (lavoro sulle board)
-- **Inviti** — aggiunta membri via email (Pro+) con flusso accept/decline e link `/invite/[token]`
-- **Limiti per piano** — enforcement lato database (RLS): es. piano Free = max 3 board per workspace
+---
+
+## A cosa serve TaskWave
+
+TaskWave esiste per **centralizzare lo stato del lavoro di un team** in un unico posto visibile e aggiornato. Invece di chiedere “a che punto siamo?” su Slack, aggiornare un foglio Google o aprire ticket su sistemi pensati per ITIL, TaskWave offre:
+
+1. **Una board Kanban** dove ogni task è una card spostabile tra colonne (stati del flusso).
+2. **Workspace separati** per progetti, clienti o squadre diverse.
+3. **Collaborazione live** — se un collega sposta un task o aggiunge un commento, lo vedi subito senza ricaricare la pagina.
+4. **Notifiche** quando vieni assegnato, quando qualcuno commenta o quando un task cambia colonna.
+5. **Account e permessi** — ogni membro ha un ruolo (admin o member); gli admin gestiscono inviti e impostazioni.
+
+Non è un ERP, non è un CRM e non è un wiki. È uno **strumento operativo giornaliero**: apri la board al mattino, vedi cosa c’è in coda, sposti le card man mano che consegni, chiudi la giornata con la colonna “Done” aggiornata.
+
+### Cosa TaskWave **non** fa (per scelta)
+
+- Workflow multi-livello con 50 stati obbligatori e approvazioni gerarchiche
+- Time tracking integrato o fatturazione ore
+- Gantt chart enterprise o capacity planning avanzato
+- Sostituire completamente Jira in organizzazioni con migliaia di utenti e processi ISO certificati
+
+TaskWave punta a **velocità, chiarezza e zero attrito** — ideale per team che preferiscono *shipping* a *configurazione infinita*.
+
+---
+
+## Per chi è pensato
+
+| Profilo | Come usa TaskWave |
+|---------|-------------------|
+| **Developer / Tech lead** | Board per sprint o feature; assignee su ogni task; sync realtime durante pair programming o review |
+| **Project manager** | Vista Kanban per stand-up; filtri per priorità e assignee; scadenze (Pro) e timeline attività |
+| **Founder / startup** | Workspace per prodotto; piano Free per iniziare; upgrade a Pro quando il team cresce |
+| **Freelancer con clienti** | Workspace separati per cliente; guest link (Business) per condividere avanzamento read-only |
+| **Team remote** | Presence (“N online” sulla board), notifiche, inviti email, stesso stato ovunque |
+
+---
+
+## Problemi che risolve
+
+| Senza TaskWave | Con TaskWave |
+|----------------|--------------|
+| “Chi sta lavorando su cosa?” → domande ripetute in chat | Assignee visibile su ogni card; filtri per persona |
+| Stato del progetto disperso in thread Slack | Una board = una fonte di verità |
+| Due persone modificano la stessa lista e si sovrascrivono | Realtime Supabase: aggiornamenti istantanei |
+| Tool gratuiti limitati o tool enterprise costosi | Free generoso; Pro/Business solo se servono integrazioni |
+| Privacy trascurata nei SaaS gratuiti | Opt-out IP, export GDPR, 2FA, cookie consent integrati |
+
+---
+
+## Casi d'uso concreti
+
+### 1. Sprint settimanale di un team dev (5 persone)
+
+- Il tech lead crea un workspace **“Prodotto Alpha”** e una board **“Sprint 12”** con colonne `Backlog | In progress | Review | Done`.
+- Importa o crea task da template Scrum.
+- Assegna card ai developer; ognuno trascina le proprie in **In progress** e poi in **Done** a fine giornata.
+- Il PM apre la board durante lo stand-up: nessuno deve aggiornare slide — la board *è* lo stand-up.
+
+### 2. Bug tracker leggero
+
+- Board con colonne `Reported | Triaged | Fixing | Verified | Closed`.
+- Priorità alta/media/bassa sulle card.
+- Commenti sul task per note di riproduzione (Pro).
+- Notifica al developer quando un bug gli viene assegnato.
+
+### 3. Onboarding di un nuovo membro
+
+- Admin invia **invito email** (Pro+); il nuovo utente accetta da `/invite/[token]`.
+- Wizard di onboarding al primo login: crea workspace, prima board, primo task.
+- Command palette `⌘K` per scoprire navigazione e scorciatoie.
+
+### 4. Integrazione con pipeline CI (Business)
+
+- Webhook outbound su evento “task spostato in Done” → chiama endpoint interno o Slack incoming webhook.
+- REST API v1 per creare/aggiornare task da script o da GitHub Actions.
+- Audit log per tracciare chi ha modificato cosa.
+
+---
+
+## Come funziona (modello concettuale)
+
+TaskWave organizza i dati in una gerarchia semplice:
+
+```
+Account (utente registrato)
+  └── Workspace          ← es. "Acme Corp", "Side project"
+        ├── Membri       ← admin | member
+        ├── Board        ← es. "Sprint 12", "Bug backlog"
+        │     ├── Colonna    ← es. "To Do", "Doing", "Done"
+        │     │     └── Task       ← titolo, priorità, assignee, scadenza, commenti, allegati
+        │     └── ...
+        └── Impostazioni   ← webhook, custom fields, audit (Business)
+```
+
+```mermaid
+flowchart TB
+  subgraph user [Utente]
+    Browser[Browser / PWA]
+  end
+  subgraph app [TaskWave]
+    UI[Dashboard + Board Kanban]
+    API[Next.js API Routes]
+  end
+  subgraph backend [Backend]
+    Auth[Supabase Auth]
+    DB[(PostgreSQL + RLS)]
+    RT[Realtime + Presence]
+    Email[Resend]
+    Pay[Stripe]
+  end
+  Browser --> UI
+  UI --> API
+  API --> Auth
+  API --> DB
+  UI --> RT
+  API --> Email
+  API --> Pay
+```
+
+Ogni **task** vive in una **colonna** di una **board** dentro un **workspace**. I permessi sono enforced a livello database con **Row Level Security (RLS)**: un utente vede solo i workspace di cui è membro.
+
+---
+
+## Flusso utente tipico
+
+1. **Registrazione** → `/register` (email + password, Supabase Auth)
+2. **Onboarding** → creazione primo workspace e board (wizard)
+3. **Dashboard** → `/dashboard` — elenco workspace, board, inviti pendenti, pannello team
+4. **Board** → `/workspace/[id]/board/[boardId]` — Kanban drag-and-drop, filtri, timeline, presence
+5. **Dettaglio task** → sheet laterale: edit titolo, priorità, assignee, commenti, allegati
+6. **Impostazioni account** → profilo, tema, notifiche, **privacy** (opt-out, export, delete), **sicurezza** (password, 2FA)
+7. **Upgrade** → `/pricing` → Stripe Checkout → piano Pro/Business sincronizzato su `profiles.plan`
+
+---
+
+## Funzionalità complete
+
+### Workspace e team
+
+- Workspace multipli (limite per piano)
+- Ruoli **admin** / **member**
+- Inviti email con token (`/invite/[token]`) — Pro+
+- Rimozione membri, cambio ruolo, leave workspace
+- Accent color per workspace (Pro+)
+- Workspace privati (Business)
 
 ### Board Kanban
 
-- **Colonne personalizzabili** (Pro+) o template predefiniti (Kanban classico, Scrum, bug tracker)
-- **Drag-and-drop** — sposta task tra colonne con feedback visivo immediato
-- **Filtri** — per priorità (alta/media/bassa) e assignee
-- **Viste** — board classica + timeline attività
-- **Presence** — indicatore “N persone online” sulla board (Supabase Presence)
-- **Template board** — creazione rapida da modelli preconfigurati
-- **Guest link** (Business) — condivisione read-only della board con link tokenizzato e scadenza
+- Colonne standard o personalizzate (Pro+)
+- **Drag-and-drop** fluido tra colonne
+- Template: Kanban classico, Scrum, bug tracker
+- Filtri per priorità e assignee
+- Vista **timeline** attività
+- **Presence**: “N persone online” (Supabase Presence)
+- Guest link read-only con scadenza (Business)
 
 ### Task
 
-- Titolo, descrizione, **priorità**, **scadenza** (Pro+), **assignee**
-- **Commenti** thread (Pro+) con notifiche
-- **Allegati** file su task (Pro: 25 MB, Business: 100 MB)
-- **Custom fields** per workspace (Business) — campi testo/numero/select gestiti da admin
-- Spostamento tra colonne con eventi tracciati (audit, webhook, notifiche)
+- Titolo, descrizione, priorità (alta/media/bassa)
+- Assignee (membro del workspace)
+- Scadenza `due_date` (Pro+)
+- Commenti con notifiche (Pro+)
+- Allegati su Supabase Storage (Pro: 25 MB, Business: 100 MB)
+- Custom fields workspace — testo, numero, select (Business)
 
-### Collaborazione e notifiche
+### Realtime e notifiche
 
-- **Sync realtime** — Supabase Realtime: modifiche visibili a tutti i client connessi sulla stessa board
-- **Inbox notifiche** — assegnazioni, commenti, spostamenti task
-- **Email opzionali** (Resend) — toggle per tipo di evento nelle impostazioni account
-- **Activity feed** — cronologia azioni recenti nel workspace
+- **Supabase Realtime** sulla board: create/update/delete task e colonne
+- Inbox notifiche in-app (assegnazione, commento, spostamento)
+- Email opzionali via **Resend** (toggle per tipo in impostazioni)
+- Activity feed nel workspace
 
 ### Produttività
 
-- **Command palette** (`⌘K` / `Ctrl+K`) — navigazione rapida e azioni
-- **Onboarding guidato** — wizard al primo accesso per creare workspace e board
-- **PWA** — installabile come app, manifest e service worker base
-- **Tema** — dark/light/system + accent color workspace (Pro+)
+- **Command palette** (`⌘K` / `Ctrl+K`)
+- Onboarding guidato al primo accesso
+- **PWA** — manifest, service worker, installabile
+- Tema dark / light / system
 
-### Business e integrazioni (piano Business)
+### Business e integrazioni
 
-- **REST API v1** — workspace, board, task, membri (autenticazione Bearer API key)
-- **API keys** — generazione/revoca per workspace
-- **Webhook outbound** — eventi task (assign, move, comment) verso URL configurabili con firma HMAC
-- **Audit log** — registro azioni critiche + export
-- **SSO/SAML** — placeholder/configurazione su richiesta (`/api/sso/status`)
+- **REST API v1** — workspaces, boards, tasks, members (Bearer API key)
+- **API keys** per workspace — generazione e revoca
+- **Webhook outbound** — eventi task con firma HMAC (`X-TaskWave-Signature`)
+- **Audit log** — azioni critiche + export CSV
+- **SSO/SAML** — configurazione su richiesta (placeholder `/api/sso/status`)
 
-Documentazione API integrata: [`/docs`](https://taskwave-rust.vercel.app/docs)
+Documentazione API: [`/docs`](https://taskwave-rust.vercel.app/docs)
 
-### Privacy, compliance e sicurezza
+### Sito pubblico
 
-TaskWave tratta privacy come feature di prodotto, non come afterthought:
-
-- **Opt-out IP end-to-end** — pagina pubblica `/privacy/opt-out`, toggle in account, supporto GPC/DNT; IP mai salvato in chiaro (solo hash SHA-256 + salt)
-- **Cookie consent banner** — categorie necessari vs analytics/marketing
-- **Diritti GDPR** — export JSON account, cancellazione account, preferenze privacy
-- **2FA TOTP** — configurabile da Impostazioni → Sicurezza (Supabase MFA)
-- **Rate limiting** — su invite, opt-out, delete account, form contatto
-- **CSP** e header di sicurezza in `next.config.mjs`
-- **RLS PostgreSQL** — ogni riga protetta per utente/workspace; limiti piano enforced server-side
-
-### Sito marketing
-
-- Landing, **About**, **Funzionalità**, **Prezzi** (stile Apple, animazioni Framer Motion)
-- **Blog** MDX da `content/blog/`
-- **Form Contattaci** in header → Resend (`POST /api/contact`)
-- Pagine legali: Privacy, Termini, Opt-out IP
-
-### Pagamenti (Stripe)
-
-Tre piani con funzionalità progressive:
-
-| Piano | Prezzo | Per chi |
-|-------|--------|---------|
-| **Free** | €0 | Side project, piccoli team (3 workspace, 5 membri, 3 board/ws) |
-| **Pro** | €12/mo | Team in crescita — inviti, scadenze, commenti, allegati, analytics, CSV |
-| **Business** | €29/mo | Integrazioni — API, webhook, audit, guest link, custom fields, SSO |
-
-Checkout Stripe (test mode in dev), portale fatturazione, sync piano via webhook.
+| Pagina | Scopo |
+|--------|--------|
+| `/` | Landing — value proposition e anteprima board |
+| `/features` | Funzionalità in stile product page (animazioni scroll) |
+| `/pricing` | Piani Free / Pro / Business + FAQ |
+| `/about` | Storia, principi, stack, visione del prodotto |
+| `/blog` | Articoli da `content/blog/*.md` |
+| `/privacy`, `/terms` | Documenti legali |
+| `/privacy/opt-out` | Opt-out tracciamento IP (anonimi + email) |
+| Header **Contattaci** | Form → `POST /api/contact` → Resend |
 
 ---
 
-## Architettura
+## Piani e prezzi
 
-```
-Browser (Next.js 14 App Router)
-    │
-    ├── Pagine marketing (/, /about, /features, /pricing, /blog)
-    ├── Dashboard autenticata (/dashboard, /workspace/.../board/...)
-    └── API Routes (/api/*)
-            │
-            ├── Supabase Auth (session cookie SSR)
-            ├── PostgreSQL + RLS (dati, RPC, trigger)
-            ├── Supabase Realtime + Presence (board live)
-            ├── Supabase Storage (allegati)
-            ├── Stripe (checkout, webhook, portal)
-            └── Resend (email transazionali, contatto, inviti, opt-out)
-```
+| | **Free** | **Pro** €12/mo | **Business** €29/mo |
+|---|:---:|:---:|:---:|
+| Workspace | 3 | ∞ | ∞ |
+| Membri / workspace | 5 | 20 | ∞ |
+| Board / workspace | 3 | ∞ | ∞ |
+| Kanban + realtime | ✓ | ✓ | ✓ |
+| Colonne custom | — | ✓ | ✓ |
+| Scadenze, commenti, allegati | — | ✓ (25 MB) | ✓ (100 MB) |
+| Inviti email | — | ✓ | ✓ |
+| Analytics + export CSV | — | ✓ | ✓ |
+| API keys + REST API | — | — | ✓ |
+| Webhook + audit log | — | — | ✓ |
+| Guest link | — | — | ✓ |
+| SSO/SAML | — | — | su richiesta |
 
-**Stack tecnico:**
+Checkout **Stripe** (test mode in sviluppo). Portale fatturazione per upgrade/downgrade/cancellazione.
+
+---
+
+## Privacy e sicurezza
+
+TaskWave tratta privacy e sicurezza come parte del prodotto:
+
+- **Opt-out IP** — pagina pubblica, toggle account, cookie, GPC/DNT; IP mai in chiaro (hash SHA-256 + `PRIVACY_IP_SALT`)
+- **Cookie consent** — banner; sync preferenze se loggato
+- **GDPR** — export JSON (`GET /api/profile/export`), delete account (`POST /api/profile/delete-account`)
+- **2FA TOTP** — Supabase MFA in Impostazioni → Sicurezza
+- **Rate limiting** — invite, opt-out, delete account, form contatto
+- **CSP** + security headers (`X-Frame-Options`, `Referrer-Policy`, …)
+- **RLS PostgreSQL** — ogni tabella protetta per utente/workspace; limiti piano enforced server-side (migration 014)
+
+Dettagli operativi: [`docs/BACKUP.md`](docs/BACKUP.md), [`docs/MONITORING.md`](docs/MONITORING.md)
+
+---
+
+## Architettura tecnica
 
 | Layer | Tecnologia |
 |-------|------------|
-| Frontend | Next.js 14, React 18, TypeScript, Tailwind, shadcn/ui, Framer Motion |
-| Auth & DB | Supabase (PostgreSQL, RLS, Auth, Realtime) |
-| Pagamenti | Stripe Checkout + Customer Portal |
-| Email | Resend |
-| Deploy | Vercel |
+| Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind, shadcn/ui, Framer Motion |
+| Auth & DB | Supabase — PostgreSQL, Auth, Realtime, Storage |
+| Pagamenti | Stripe Checkout + Customer Portal + webhooks |
+| Email | Resend (auth, inviti, opt-out, contatto) |
+| Deploy | Vercel (progetto `taskwave`) |
 | E2E | Playwright |
-
-**Backend legacy:** la cartella `backend/` (Django) è **deprecata** e non usata in produzione. Tutta la logica vive in Next.js API Routes + RPC Postgres. Vedi [`backend/DEPRECATED.md`](backend/DEPRECATED.md).
-
----
-
-## Struttura repository
 
 ```
 src/
-├── app/                    # App Router (pagine + API routes)
-│   ├── (dashboard)/        # Area autenticata (dashboard, board, docs)
-│   ├── (auth)/               # Login, register, reset password
-│   ├── api/                  # REST interno + v1 Business + Stripe + privacy
-│   ├── about/ features/ pricing/ blog/  # Marketing
-│   └── privacy/ terms/       # Legal
-├── components/               # UI, layout, workspace panels, marketing
-├── hooks/                    # Realtime, presence
-├── lib/                      # Supabase client, data layer, plans, privacy, email
-content/blog/                 # Articoli MDX/markdown
-supabase/migrations/          # Schema SQL versionato (001–014)
-docs/                         # BACKUP.md, MONITORING.md
-e2e/                          # Test Playwright
+├── app/                 # Pagine + API routes
+│   ├── (dashboard)/     # Area autenticata
+│   ├── (auth)/          # Login, register, reset
+│   ├── api/             # REST interno, v1, Stripe, privacy
+│   └── about|features|pricing|blog|privacy|terms
+├── components/          # UI, workspace panels, marketing
+├── hooks/               # Realtime, presence
+├── lib/                 # Supabase, data layer, plans, privacy, webhooks
+content/blog/            # Articoli markdown
+supabase/migrations/     # Schema SQL 001–014
+e2e/                     # Test Playwright
+docs/                    # Backup, monitoring
 ```
+
+**Backend legacy:** `backend/` (Django) è **deprecato** — non usato in produzione. Vedi [`backend/DEPRECATED.md`](backend/DEPRECATED.md).
 
 ---
 
 ## Setup locale
 
-### 1. Dipendenze
-
 ```bash
+git clone https://github.com/niccolopiccioli/taskflow-pro.git
+cd taskflow-pro
 npm install
+cp .env.example .env.local   # compila Supabase, Stripe, Resend, PRIVACY_IP_SALT
+npm run dev                    # http://localhost:3000
 ```
 
-### 2. Environment
+### Supabase
 
-```bash
-cp .env.example .env.local
-# Compila: Supabase URL/keys, Stripe, Resend, PRIVACY_IP_SALT, ecc.
-```
+- Progetto: `lcubcugivegahjsbmepy` (eu-west-1)
+- Applica migrazioni in `supabase/migrations/` (001 → 014)
+- Auth → URL: `http://localhost:3000/auth/callback` (+ dominio produzione)
 
-Variabili principali: vedi [`.env.example`](.env.example).
-
-### 3. Supabase
-
-Progetto attivo: `lcubcugivegahjsbmepy` (eu-west-1)
-
-1. Dashboard: https://supabase.com/dashboard/project/lcubcugivegahjsbmepy
-2. Applica migrazioni in `supabase/migrations/` (001 → 014)
-3. **Auth → URL Configuration:**
-   - Site URL: `https://taskwave.vercel.app` (o il tuo dominio)
-   - Redirect: `https://<dominio>/auth/callback`, `http://localhost:3000/auth/callback`
-
-### 4. Stripe (test mode)
+### Stripe (test)
 
 ```bash
 stripe listen --forward-to localhost:3000/api/stripe/webhook
+# Carta test: 4242 4242 4242 4242
 ```
 
-Carta test: `4242 4242 4242 4242`.
-
-### 5. Avvia
-
-```bash
-npm run dev
-```
-
-Apri [http://localhost:3000](http://localhost:3000).
+Variabili complete: [`.env.example`](.env.example)
 
 ---
 
 ## Deploy
 
-Progetto Vercel: **`taskwave`**
-
 ```bash
 vercel deploy --prod
 ```
 
-**URL produzione:** https://taskwave-rust.vercel.app
-
-Per usare `taskwave.vercel.app`: Vercel Dashboard → progetto **taskwave** → Settings → Domains → assegna il dominio alla production corrente (rimuovi eventuali alias su deploy obsoleti).
-
-Dopo il deploy, aggiorna:
-
-- `NEXT_PUBLIC_APP_URL` su Vercel
-- Supabase Auth URLs
-- Webhook Stripe → `https://<dominio>/api/stripe/webhook`
+- **Progetto Vercel:** `taskwave`
+- **URL attuale:** [taskwave-rust.vercel.app](https://taskwave-rust.vercel.app)
+- Imposta `NEXT_PUBLIC_APP_URL`, aggiorna Supabase Auth URLs e webhook Stripe sul dominio finale
+- Per `taskwave.vercel.app`: Vercel Dashboard → taskwave → Settings → Domains
 
 ---
 
-## Test
+## Test e documentazione
 
 ```bash
-npm run test:e2e          # Playwright — landing, pricing, opt-out, auth redirect
-npx playwright install    # primo utilizzo
+npm run test:e2e
+npx playwright install   # primo utilizzo
 ```
 
----
-
-## Sicurezza e operazioni
-
-- Rate limiting in-memory su route sensibili
-- CSP + security headers
-- 2FA TOTP in impostazioni account
-- [`docs/MONITORING.md`](docs/MONITORING.md) — health check, Sentry opzionale
-- [`docs/BACKUP.md`](docs/BACKUP.md) — backup Supabase, runbook ripristino
+I test coprono landing, pricing, blog, opt-out privacy, redirect auth e board.
 
 ---
 
-## Licenza e contatti
+## Contatti
 
-Progetto privato / uso interno — vedi repository GitHub per dettagli.
+- **Sito:** [taskwave-rust.vercel.app](https://taskwave-rust.vercel.app)
+- **Form:** pulsante “Contattaci” nell’header del sito
+- **Email:** `hello@taskwave.app`
 
-- Sito: [taskwave-rust.vercel.app](https://taskwave-rust.vercel.app)
-- Contatto: form “Contattaci” sul sito o `hello@taskwave.app`
+---
+
+*TaskWave — Kanban per team che consegnano.*
