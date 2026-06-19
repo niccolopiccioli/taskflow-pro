@@ -31,6 +31,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# python / django legacy
+backend/venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/db.sqlite3
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

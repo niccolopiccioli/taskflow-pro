@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TaskFlow Pro
 
-## Getting Started
+Task management Kanban per team di sviluppo. Next.js 14 + Supabase + Stripe (test mode), deployato su Vercel.
 
-First, run the development server:
+## Stack
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
+- **Database & Auth**: Supabase (PostgreSQL + Row Level Security)
+- **Payments**: Stripe Checkout (test mode)
+- **Deploy**: Vercel
+
+## Setup locale
+
+### 1. Dipendenze
+
+```bash
+npm install
+```
+
+### 2. Supabase
+
+Progetto attivo: `lcubcugivegahjsbmepy` (eu-west-1)
+
+1. Dashboard: https://supabase.com/dashboard/project/lcubcugivegahjsbmepy
+2. Schema già applicato via migrazione `initial_schema`
+3. **Auth → URL Configuration** — aggiungi:
+   - Site URL: `https://taskflow-pro-murex.vercel.app`
+   - Redirect URLs: `https://taskflow-pro-murex.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`
+4. Disabilita "Confirm email" in sviluppo se vuoi login immediato
+
+### 3. Stripe (test mode)
+
+Prodotti creati: **Pro** €12/mese, **Business** €29/mese
+
+Price IDs configurati in Vercel env vars.
+
+Per webhook locale:
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+### 4. Environment
+
+```bash
+cp .env.example .env.local
+# Compila tutte le variabili
+```
+
+### 5. Avvia
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Apri [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Live:** https://taskflow-pro-murex.vercel.app
 
-## Learn More
+Progetto Vercel: `taskflow-pro` (team niccolopicciolis-projects)
 
-To learn more about Next.js, take a look at the following resources:
+1. Env vars già configurate su Vercel
+2. Webhook Stripe punta a `https://taskflow-pro-murex.vercel.app/api/stripe/webhook`
+3. Per redeploy: `vercel deploy --prod`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Test pagamenti
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Usa la carta test `4242 4242 4242 4242`, qualsiasi data futura e CVC.
 
-## Deploy on Vercel
+## Struttura
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/              # Next.js App Router
+├── components/       # UI + layout condivisi
+├── lib/
+│   ├── supabase/     # Client Supabase
+│   ├── data/         # Data access layer
+│   └── stripe.ts     # Stripe config
+supabase/
+└── migrations/       # Schema SQL
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Backend legacy
+
+La cartella `backend/` contiene il vecchio backend Django. Non è usato in produzione — l'app usa Supabase.
