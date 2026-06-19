@@ -35,7 +35,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { WorkspaceWithMembers } from '@/lib/database.types';
+import { Switch } from '@/components/ui/switch';
+import type { PlanTier, WorkspaceWithMembers } from '@/lib/database.types';
+import { hasFeature } from '@/lib/plans';
+import { PlanGate } from '@/components/plan/plan-gate';
 import {
   canManageMembers,
   canRemoveMember,
@@ -53,12 +56,16 @@ import {
   leaveWorkspace,
   updateWorkspaceApi,
   deleteWorkspaceApi,
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
 } from '@/lib/data';
 import { cn } from '@/lib/utils';
 
 interface WorkspaceTeamPanelProps {
   workspace: WorkspaceWithMembers;
   currentUserId: string;
+  plan: PlanTier;
   onInvite: () => void;
   onRefresh: () => Promise<void>;
   onWorkspaceDeleted?: () => void;
@@ -98,6 +105,7 @@ function RoleBadge({
 export function WorkspaceTeamPanel({
   workspace,
   currentUserId,
+  plan,
   onInvite,
   onRefresh,
   onWorkspaceDeleted,
@@ -111,6 +119,13 @@ export function WorkspaceTeamPanel({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState(workspace.name);
+  const [isPrivate, setIsPrivate] = useState(workspace.is_private ?? false);
+  const [accentColor, setAccentColor] = useState(workspace.accent_color || '#14b8a6');
+  const [apiKeyName, setApiKeyName] = useState('');
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [apiKeys, setApiKeys] = useState<
+    Array<{ id: string; name: string; key_prefix: string; created_at: string }>
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   const isAdmin = canManageMembers(workspace, currentUserId);
@@ -157,8 +172,32 @@ export function WorkspaceTeamPanel({
 
   const handleSaveSettings = async () => {
     await runAction('settings', async () => {
-      await updateWorkspaceApi(workspace.id, workspaceName);
+      await updateWorkspaceApi(workspace.id, {
+        name: workspaceName,
+        ...(hasFeature(plan, 'privateWorkspace') ? { is_private: isPrivate } : {}),
+        ...(hasFeature(plan, 'workspaceAccent') ? { accent_color: accentColor } : {}),
+      });
       setSettingsOpen(false);
+    });
+  };
+
+  const loadApiKeys = async () => {
+    if (!hasFeature(plan, 'apiKeys')) return;
+    try {
+      const keys = await listApiKeys(workspace.id);
+      setApiKeys(keys);
+    } catch {
+      setApiKeys([]);
+    }
+  };
+
+  const handleCreateApiKey = async () => {
+    if (!apiKeyName.trim()) return;
+    await runAction('api-key', async () => {
+      const result = await createApiKey(workspace.id, apiKeyName.trim());
+      setNewApiKey(result.key);
+      setApiKeyName('');
+      await loadApiKeys();
     });
   };
 
@@ -191,7 +230,14 @@ export function WorkspaceTeamPanel({
           </div>
           <div className="flex flex-wrap gap-2">
             {canEdit && (
-              <Button size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSettingsOpen(true);
+                  loadApiKeys();
+                }}
+              >
                 <Settings className="w-4 h-4 mr-2" />
                 Impostazioni
               </Button>
@@ -389,6 +435,74 @@ export function WorkspaceTeamPanel({
                 onChange={(e) => setWorkspaceName(e.target.value)}
               />
             </div>
+
+            <PlanGate feature="workspaceAccent" plan={plan}>
+              <div className="space-y-2">
+                <Label htmlFor="ws-accent">Accent color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="ws-accent"
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    className="w-14 h-10 p-1 cursor-pointer"
+                  />
+                  <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
+                </div>
+              </div>
+            </PlanGate>
+
+            <PlanGate feature="privateWorkspace" plan={plan}>
+              <div className="flex items-center justify-between rounded-xl border border-border/60 p-3">
+                <div>
+                  <p className="text-sm font-medium">Workspace privato</p>
+                  <p className="text-xs text-muted-foreground">Visibile solo su invito</p>
+                </div>
+                <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
+              </div>
+            </PlanGate>
+
+            <PlanGate feature="apiKeys" plan={plan}>
+              <div className="space-y-3 rounded-xl border border-border/60 p-3">
+                <p className="text-sm font-medium">API Keys</p>
+                {newApiKey && (
+                  <div className="rounded-lg bg-primary/10 p-2 text-xs break-all">
+                    Nuova chiave (copiala ora): <code>{newApiKey}</code>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nome chiave"
+                    value={apiKeyName}
+                    onChange={(e) => setApiKeyName(e.target.value)}
+                  />
+                  <Button size="sm" onClick={handleCreateApiKey} disabled={!!actionLoading}>
+                    Crea
+                  </Button>
+                </div>
+                {apiKeys.map((k) => (
+                  <div key={k.id} className="flex items-center justify-between text-xs">
+                    <span>
+                      {k.name} · {k.key_prefix}...
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400 h-7"
+                      onClick={() =>
+                        runAction(`revoke-${k.id}`, async () => {
+                          await revokeApiKey(workspace.id, k.id);
+                          await loadApiKeys();
+                        })
+                      }
+                    >
+                      Revoca
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </PlanGate>
+
             {isOwner && (
               <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3">
                 <p className="text-sm font-medium text-red-400 mb-2">Zona pericolosa</p>

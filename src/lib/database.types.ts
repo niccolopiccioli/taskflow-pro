@@ -60,11 +60,13 @@ export interface Database {
           name: string;
           description: string;
           owner_id: string;
+          is_private: boolean;
+          accent_color: string | null;
           created_at: string;
           updated_at: string;
         },
-        { name: string; description?: string; owner_id: string },
-        { name?: string; description?: string; updated_at?: string }
+        { name: string; description?: string; owner_id: string; is_private?: boolean; accent_color?: string | null },
+        { name?: string; description?: string; is_private?: boolean; accent_color?: string | null; updated_at?: string }
       >;
       workspace_members: TableDef<
         {
@@ -109,6 +111,7 @@ export interface Database {
           assignee_id: string | null;
           priority: TaskPriority;
           position: number;
+          due_date: string | null;
           created_by_id: string | null;
           created_at: string;
           updated_at: string;
@@ -120,6 +123,7 @@ export interface Database {
           assignee_id?: string | null;
           priority?: TaskPriority;
           position?: number;
+          due_date?: string | null;
           created_by_id?: string | null;
         },
         {
@@ -129,6 +133,7 @@ export interface Database {
           assignee_id?: string | null;
           priority?: TaskPriority;
           position?: number;
+          due_date?: string | null;
           updated_at?: string;
         }
       >;
@@ -154,6 +159,85 @@ export interface Database {
         },
         { user_id: string; type: NotificationType; task_id?: string | null; read?: boolean },
         { read?: boolean }
+      >;
+      task_attachments: TableDef<
+        {
+          id: string;
+          task_id: string;
+          uploaded_by: string;
+          file_name: string;
+          file_path: string;
+          file_size: number;
+          mime_type: string | null;
+          created_at: string;
+        },
+        {
+          task_id: string;
+          uploaded_by: string;
+          file_name: string;
+          file_path: string;
+          file_size: number;
+          mime_type?: string | null;
+        },
+        Record<string, never>
+      >;
+      audit_log: TableDef<
+        {
+          id: string;
+          workspace_id: string;
+          actor_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          metadata: Json;
+          created_at: string;
+        },
+        {
+          workspace_id: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          metadata?: Json;
+        },
+        Record<string, never>
+      >;
+      api_keys: TableDef<
+        {
+          id: string;
+          user_id: string;
+          workspace_id: string | null;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          last_used_at: string | null;
+          created_at: string;
+        },
+        {
+          user_id: string;
+          workspace_id?: string | null;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+        },
+        { last_used_at?: string | null }
+      >;
+      board_guest_links: TableDef<
+        {
+          id: string;
+          board_id: string;
+          token: string;
+          created_by: string;
+          expires_at: string | null;
+          created_at: string;
+        },
+        {
+          board_id: string;
+          token: string;
+          created_by: string;
+          expires_at?: string | null;
+        },
+        { expires_at?: string | null }
       >;
     };
     Views: Record<string, never>;
@@ -209,6 +293,20 @@ export interface Database {
         };
         Returns: boolean;
       };
+      log_audit_event: {
+        Args: {
+          p_workspace_id: string;
+          p_action: string;
+          p_entity_type: string;
+          p_entity_id?: string | null;
+          p_metadata?: Json;
+        };
+        Returns: string;
+      };
+      validate_api_key: {
+        Args: { p_key_hash: string };
+        Returns: { user_id: string; workspace_id: string | null }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -223,11 +321,25 @@ export type Column = Database['public']['Tables']['columns']['Row'];
 export type Task = Database['public']['Tables']['tasks']['Row'];
 export type Comment = Database['public']['Tables']['comments']['Row'];
 export type Notification = Database['public']['Tables']['notifications']['Row'];
+export type TaskAttachment = Database['public']['Tables']['task_attachments']['Row'];
+export type AuditLogEntry = Database['public']['Tables']['audit_log']['Row'];
+export type ApiKey = Database['public']['Tables']['api_keys']['Row'];
+export type BoardGuestLink = Database['public']['Tables']['board_guest_links']['Row'];
 
 export interface WorkspaceWithMembers extends Workspace {
   members: Array<WorkspaceMember & { profile: Profile }>;
 }
 
 export interface BoardWithColumns extends Board {
-  columns: Array<Column & { tasks: Array<Task & { assignee?: Profile | null }> }>;
+  columns: Array<
+    Column & {
+      tasks: Array<
+        Task & {
+          assignee?: Profile | null;
+          comments?: Array<Comment & { profile?: Profile }>;
+          attachments?: TaskAttachment[];
+        }
+      >;
+    }
+  >;
 }

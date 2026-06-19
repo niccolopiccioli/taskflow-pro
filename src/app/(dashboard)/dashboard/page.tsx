@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Layout, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Layout, CheckCircle, Clock, AlertCircle, Loader2, Download, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -19,12 +19,17 @@ import {
   inviteMemberByEmail,
   getBoards,
   getWorkspaceStats,
+  getWorkspaceAnalytics,
+  exportWorkspaceCsv,
 } from '@/lib/data';
 import type { Profile, WorkspaceWithMembers } from '@/lib/database.types';
-import { canCreateWorkspace, canAddMember } from '@/lib/plans';
+import { canCreateWorkspace, canAddMember, canCreateBoard, canSendEmailInvites, hasFeature } from '@/lib/plans';
 import { canInviteMembers } from '@/lib/workspace-permissions';
 import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { WorkspaceTeamPanel } from '@/components/workspace/workspace-team-panel';
+import { WorkspaceAuditPanel } from '@/components/workspace/workspace-audit-panel';
+import { PlanGate } from '@/components/plan/plan-gate';
+import { UpgradeCtaBanner } from '@/components/pricing/pricing-cards';
 
 interface Board {
   id: string;
@@ -58,6 +63,10 @@ function DashboardContent() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceWithMembers | null>(null);
   const [stats, setStats] = useState({ total: 0, inProgress: 0, done: 0, boardCount: 0 });
+  const [analytics, setAnalytics] = useState<{
+    weeklyDone: number[];
+    completionRate: number;
+  } | null>(null);
 
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [createBoardOpen, setCreateBoardOpen] = useState(false);
@@ -88,6 +97,8 @@ function DashboardContent() {
       setBoards(boardsData);
       const statsData = await getWorkspaceStats(supabase, current.id);
       setStats(statsData);
+      const analyticsData = await getWorkspaceAnalytics(supabase, current.id);
+      setAnalytics(analyticsData);
     }
   };
 
@@ -143,7 +154,16 @@ function DashboardContent() {
   };
 
   const handleCreateBoard = async () => {
-    if (!newBoardName.trim() || !selectedWorkspace) return;
+    if (!newBoardName.trim() || !selectedWorkspace || !profile) return;
+
+    if (!canCreateBoard(profile.plan, boards.length)) {
+      toast({
+        variant: 'destructive',
+        title: 'Limite board raggiunto',
+        description: 'Il piano Gratuito permette max 3 board. Passa a Pro su /pricing.',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -185,6 +205,15 @@ function DashboardContent() {
       return;
     }
 
+    if (!canSendEmailInvites(profile.plan)) {
+      toast({
+        variant: 'destructive',
+        title: 'Funzione Pro',
+        description: 'Gli inviti email richiedono il piano Pro o Business.',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await inviteMemberByEmail(supabase, selectedWorkspace.id, inviteEmail);
@@ -212,6 +241,8 @@ function DashboardContent() {
     setBoards(boardsData);
     const statsData = await getWorkspaceStats(supabase, workspace.id);
     setStats(statsData);
+    const analyticsData = await getWorkspaceAnalytics(supabase, workspace.id);
+    setAnalytics(analyticsData);
   };
 
   const handleManageBilling = async () => {
@@ -290,6 +321,8 @@ function DashboardContent() {
           </div>
         </div>
 
+        {profile && <div className="mb-6"><UpgradeCtaBanner plan={profile.plan} /></div>}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[
             { label: 'Task totali', value: stats.total, icon: Layout, color: 'text-teal-400' },
@@ -308,6 +341,60 @@ function DashboardContent() {
             </Card>
           ))}
         </div>
+
+        {selectedWorkspace && profile && (
+          <Card className="mb-8 border-border/60 bg-card/50">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Analytics
+              </CardTitle>
+              {hasFeature(profile.plan, 'csvExport') && analytics && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() =>
+                    exportWorkspaceCsv(
+                      { ...stats, completionRate: analytics.completionRate },
+                      selectedWorkspace.name
+                    )
+                  }
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              <PlanGate feature="advancedAnalytics" plan={profile.plan}>
+                {analytics && (
+                  <div className="space-y-6">
+                    <div className="flex items-end gap-2 h-32">
+                      {analytics.weeklyDone.map((count, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                          <div
+                            className="w-full rounded-t-lg bg-primary/80 transition-all min-h-[4px]"
+                            style={{
+                              height: `${Math.max(8, (count / Math.max(...analytics.weeklyDone, 1)) * 100)}%`,
+                            }}
+                          />
+                          <span className="text-[10px] text-muted-foreground">
+                            {4 - i} sett. fa
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Tasso completamento:{' '}
+                      <strong className="text-foreground">{analytics.completionRate}%</strong>
+                    </p>
+                  </div>
+                )}
+              </PlanGate>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-8 border-border/60 bg-card/50">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
@@ -370,10 +457,12 @@ function DashboardContent() {
             <WorkspaceTeamPanel
               workspace={selectedWorkspace}
               currentUserId={profile.id}
+              plan={profile.plan}
               onInvite={() => setInviteMemberOpen(true)}
               onRefresh={loadData}
               onWorkspaceDeleted={handleWorkspaceLeftOrDeleted}
             />
+            <WorkspaceAuditPanel workspaceId={selectedWorkspace.id} plan={profile.plan} />
           </div>
         )}
       </main>

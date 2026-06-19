@@ -25,6 +25,21 @@ export async function POST(
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.plan === 'free') {
+      return NextResponse.json(
+        {
+          error: 'Gli inviti email richiedono il piano Pro o Business. Passa a /pricing per fare upgrade.',
+        },
+        { status: 403 }
+      );
+    }
+
     const { data: workspace, error: wsError } = await supabase
       .from('workspaces')
       .select('name')

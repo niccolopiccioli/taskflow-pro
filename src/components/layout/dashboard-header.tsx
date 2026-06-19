@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { UserPlus, Sparkles, Menu, LayoutDashboard } from 'lucide-react';
+import { UserPlus, Menu, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Brand } from '@/components/layout/brand';
 import { ProfileMenu } from '@/components/layout/profile-menu';
+import { PlanBadge } from '@/components/layout/plan-badge';
 import type { Profile } from '@/lib/database.types';
-import { planLabel } from '@/lib/plans';
 
 interface DashboardHeaderProps {
   profile: Profile | null;
@@ -47,15 +46,7 @@ export function DashboardHeader({
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {profile && (
-              <Badge
-                variant="outline"
-                className="border-teal-500/30 text-teal-400 gap-1 rounded-full px-2.5 shrink-0"
-              >
-                <Sparkles className="w-3 h-3" />
-                {planLabel(profile.plan)}
-              </Badge>
-            )}
+            {profile && <PlanBadge plan={profile.plan} />}
 
             {canInvite && (
               <Button
@@ -80,6 +71,7 @@ export function DashboardHeader({
           </div>
 
           <div className="flex md:hidden items-center gap-2 ml-auto">
+            {profile && <PlanBadge plan={profile.plan} />}
             {canInvite && (
               <Button
                 size="sm"
